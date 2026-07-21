@@ -84,12 +84,12 @@ function Icon({ name, size = 22 }: { name: IconName; size?: number }) {
 }
 
 const services = [
-  { icon: "droplet" as const, slug: "manutencao-bombas-submersiveis", title: "Manutenção de bombas submersíveis", text: "Diagnóstico, desmontagem, recuperação e testes para poços, drenagem, condomínios, obras e aplicações industriais.", code: "01" },
-  { icon: "pump" as const, slug: "manutencao-bombas-centrifugas", title: "Manutenção de bombas centrífugas", text: "Correção de falhas, vazamentos, perda de pressão, ruídos, travamentos e problemas que comprometem o sistema.", code: "02" },
-  { icon: "motor" as const, slug: "rebobinagem-motores-eletricos", title: "Rebobinagem de motores elétricos", text: "Rebobinagem e recuperação de motores elétricos de pequeno e grande porte, incluindo equipamentos de até 500 CV.", code: "03" },
-  { icon: "tool" as const, slug: "manutencao-ferramentas-eletricas", title: "Manutenção de ferramentas elétricas", text: "Manutenção de furadeiras, lixadeiras, marteletes e outras ferramentas utilizadas por profissionais, empresas e obras.", code: "04" },
-  { icon: "shop" as const, slug: "venda-bombas-equipamentos", title: "Venda de bombas e equipamentos", text: "Orientação técnica para escolher bombas e equipamentos adequados à necessidade de cada cliente.", code: "05" },
-  { icon: "pool" as const, slug: "manutencao-bombas-piscina", title: "Soluções para piscinas", text: "Manutenção de bombas, troca de areia de filtros, análise da circulação e suporte técnico para projetos de piscinas.", code: "06" },
+  { icon: "droplet" as const, slug: "manutencao-bombas-submersiveis", title: "Manutenção de bombas submersíveis", text: "Diagnóstico e recuperação para poços, drenagem, obras, condomínios e indústrias.", code: "01" },
+  { icon: "pump" as const, slug: "manutencao-bombas-centrifugas", title: "Manutenção de bombas centrífugas", text: "Correção de vazamentos, ruídos, travamentos, pressão e vazão.", code: "02" },
+  { icon: "motor" as const, slug: "rebobinagem-motores-eletricos", title: "Rebobinagem de motores elétricos", text: "Recuperação de motores de diferentes portes, inclusive equipamentos de até 500 CV.", code: "03" },
+  { icon: "tool" as const, slug: "manutencao-ferramentas-eletricas", title: "Manutenção de ferramentas elétricas", text: "Reparo de furadeiras, lixadeiras, marteletes e ferramentas profissionais.", code: "04" },
+  { icon: "shop" as const, slug: "venda-bombas-equipamentos", title: "Venda de bombas e equipamentos", text: "Orientação para escolher a bomba ou o equipamento correto.", code: "05" },
+  { icon: "pool" as const, slug: "manutencao-bombas-piscina", title: "Soluções para piscinas", text: "Manutenção de bombas, filtros e sistemas de circulação para piscinas.", code: "06" },
 ];
 
 const differentiators = [
@@ -137,6 +137,16 @@ function Brand({ light = false }: { light?: boolean }) {
     <a className={`brand ${light ? "brand-light" : ""}`} href="#inicio" aria-label="Nuvem Bombas — início">
       <img src={withBasePath("/images/nuvem-bombas-logo-web.webp")} width="1704" height="275" alt="Nuvem Bombas — Manutenção de Máquinas e Equipamentos" />
     </a>
+  );
+}
+
+function SectionMarker({ number, label }: { number: string; label: string }) {
+  return (
+    <div className="section-marker" aria-hidden="true">
+      <span>{number}</span>
+      <strong>{label}</strong>
+      <i />
+    </div>
   );
 }
 
@@ -284,8 +294,8 @@ export default function Home() {
         <div className="hero-panel">
           <div className="hero-copy">
             <div className="eyebrow"><span /> Manutenção de bombas e motores em São Paulo</div>
-            <h1 id="hero-title">Bomba ou motor com falha? <em>Solicite uma avaliação técnica</em></h1>
-            <p>Descreva os sintomas, envie fotos pelo WhatsApp e receba a orientação inicial para avaliação, retirada ou entrega na oficina.</p>
+            <h1 id="hero-title">Bomba ou motor <em>com falha?</em></h1>
+            <p className="hero-lead"><strong>Solicite uma avaliação técnica pelo WhatsApp.</strong> Descreva os sintomas, envie fotos e receba a orientação inicial para avaliação, retirada ou entrega na oficina.</p>
             <div className="hero-actions">
               <a className="button" href={leadUrl(whatsappMessages.quote)} target="_blank" rel="noopener noreferrer" onClick={() => track("whatsapp_click", "hero_avaliacao")}>Solicitar avaliação no WhatsApp <Icon name="arrow" size={18} /></a>
               <a className="button button-secondary" href={leadUrl(whatsappMessages.urgent)} target="_blank" rel="noopener noreferrer" onClick={() => track("whatsapp_click", "hero_equipamento_parado")}>Meu equipamento parou</a>
@@ -305,13 +315,8 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="confidence-bar section-shell" aria-label="Compromisso técnico">
-        <span className="confidence-mark"><Icon name="droplet" size={19} /></span>
-        <p>O reparo só começa após inspeção, apresentação do orçamento e aprovação do cliente.</p>
-        <a href="#como-funciona">Entenda o processo <Icon name="arrow" size={17} /></a>
-      </section>
-
-      <section className="section-shell intent-section" aria-labelledby="intent-title">
+      <section className="section-shell intent-section story-section story-panel" aria-labelledby="intent-title">
+        <SectionMarker number="01" label="Identifique o problema" />
         <div className="intent-heading">
           <span className="section-kicker">Atendimento direcionado</span>
           <h2 id="intent-title">Qual situação descreve melhor o seu problema?</h2>
@@ -326,9 +331,15 @@ export default function Home() {
             </a>
           ))}
         </div>
+        <div className="confidence-bar" aria-label="Compromisso técnico">
+          <span className="confidence-mark"><Icon name="droplet" size={19} /></span>
+          <p>O reparo só começa após inspeção, apresentação do orçamento e aprovação do cliente.</p>
+          <a href="#como-funciona">Entenda o processo <Icon name="arrow" size={17} /></a>
+        </div>
       </section>
 
-      <section className="section-shell section-block" id="servicos" aria-labelledby="services-title">
+      <section className="section-shell section-block story-section" id="servicos" aria-labelledby="services-title">
+        <SectionMarker number="02" label="Escolha a solução" />
         <div className="section-heading split-heading">
           <div><span className="section-kicker">Áreas de atuação</span><h2 id="services-title">Serviços especializados para diferentes necessidades</h2></div>
           <p>Da avaliação inicial aos testes finais, cada equipamento recebe uma análise técnica para identificar a melhor solução.</p>
@@ -340,7 +351,7 @@ export default function Home() {
               <h3>{service.title}</h3>
               <p>{service.text}</p>
               <div className="service-card-actions">
-                <a className="service-detail-link" href={withBasePath(`/servicos/${service.slug}/`)}>Ver detalhes e aplicações <Icon name="arrow" size={17} /></a>
+                <a className="service-detail-link" href={withBasePath(`/servicos/${service.slug}`)}>Ver detalhes e aplicações <Icon name="arrow" size={17} /></a>
                 <a className="service-whatsapp-link" href={leadUrl(`Olá! Vim pelo site da Nuvem Bombas e gostaria de solicitar uma avaliação para: ${service.title}. Meu equipamento e o problema são:`)} target="_blank" rel="noopener noreferrer" onClick={() => track("whatsapp_click", `servico_${service.slug}`)}>Pedir avaliação pelo WhatsApp</a>
               </div>
             </article>
@@ -348,10 +359,11 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="section-shell emergency-panel" aria-labelledby="emergency-title">
+      <section className="section-shell emergency-panel story-section" aria-labelledby="emergency-title">
         <img src={withBasePath("/images/water-system.webp")} width="1600" height="900" loading="lazy" alt="Sistema moderno e organizado de circulação de água para piscina" />
         <div className="emergency-overlay" />
         <div className="emergency-copy">
+          <SectionMarker number="03" label="Resposta rápida" />
           <span className="section-kicker section-kicker-light">Resposta técnica</span>
           <h2 id="emergency-title">Seu equipamento parou? Obtenha orientação antes que a falha comprometa a operação.</h2>
           <p>Informe os sintomas e envie fotos pelo WhatsApp. A equipe orientará o próximo passo para avaliação, retirada ou recebimento na oficina.</p>
@@ -359,7 +371,8 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="section-shell section-block" id="diferenciais" aria-labelledby="different-title">
+      <section className="section-shell section-block story-section" id="diferenciais" aria-labelledby="different-title">
+        <SectionMarker number="04" label="Confiança técnica" />
         <div className="section-heading centered-heading">
           <span className="section-kicker">Precisão e confiança</span>
           <h2 id="different-title">Por que escolher a Nuvem Bombas?</h2>
@@ -377,7 +390,8 @@ export default function Home() {
       </section>
 
       <section className="process-section" id="como-funciona" aria-labelledby="process-title">
-        <div className="section-shell section-block">
+        <div className="section-shell section-block story-section">
+          <SectionMarker number="05" label="Processo transparente" />
           <div className="section-heading split-heading">
             <div><span className="section-kicker">Como funciona</span><h2 id="process-title">Do diagnóstico à entrega</h2></div>
             <p>Um fluxo simples e transparente para você saber o que acontece com o equipamento em cada etapa.</p>
@@ -390,7 +404,8 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="section-shell section-block about-grid" id="sobre" aria-labelledby="about-title">
+      <section className="section-shell section-block about-grid story-section" id="sobre" aria-labelledby="about-title">
+        <SectionMarker number="06" label="Experiência comprovada" />
         <div className="about-media">
           <img src={withBasePath("/images/workshop.webp")} width="1448" height="1086" loading="lazy" alt="Técnico inspecionando um motor elétrico em oficina organizada" />
           <div className="about-caption"><strong>Desde 1996</strong><span>manutenção técnica e recuperação de equipamentos</span></div>
@@ -406,7 +421,8 @@ export default function Home() {
       </section>
 
       <section className="caio-profile-section section-block" aria-labelledby="caio-profile-title">
-        <div className="section-shell caio-profile-grid">
+        <div className="section-shell caio-profile-grid story-section">
+          <SectionMarker number="07" label="Responsável técnico" />
           <div className="caio-profile-copy">
             <span className="section-kicker">Responsável técnico</span>
             <h2 id="caio-profile-title">Conheça Caio Marcolino</h2>
@@ -427,17 +443,8 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="audiences-section">
-        <div className="section-shell section-block compact-section">
-          <div className="section-heading centered-heading">
-            <span className="section-kicker">Públicos atendidos</span>
-            <h2>Soluções para diferentes tipos de clientes</h2>
-          </div>
-          <div className="audience-cloud">{audiences.map((audience, index) => <span key={audience}><b>{String(index + 1).padStart(2, "0")}</b>{audience}</span>)}</div>
-        </div>
-      </section>
-
-      <section className="section-shell section-block" id="atendimento" aria-labelledby="service-region-title">
+      <section className="section-shell section-block story-section" id="atendimento" aria-labelledby="service-region-title">
+        <SectionMarker number="08" label="Área de atendimento" />
         <div className="region-grid">
           <div className="region-copy">
             <span className="section-kicker">Região e modalidades</span>
@@ -456,10 +463,15 @@ export default function Home() {
             <a className="button" href={leadUrl(whatsappMessages.schedule)} target="_blank" rel="noopener noreferrer" onClick={() => track("whatsapp_click", "agendamento")}>Agendar uma avaliação <Icon name="calendar" size={18} /></a>
           </div>
         </div>
+        <div className="audience-strip" aria-label="Públicos atendidos">
+          <small>Atendemos</small>
+          <div className="audience-cloud">{audiences.map((audience) => <span key={audience}>{audience}</span>)}</div>
+        </div>
       </section>
 
       <section className="portfolio-section section-block" id="portfolio" aria-labelledby="portfolio-title">
-        <div className="section-shell">
+        <div className="section-shell story-section">
+          <SectionMarker number="09" label="Prova visual" />
           <div className="section-heading split-heading">
             <div><span className="section-kicker">Portfólio</span><h2 id="portfolio-title">Equipamentos e serviços realizados</h2></div>
             <p>Imagens institucionais ilustrativas das principais frentes de trabalho da Nuvem Bombas, do diagnóstico aos testes finais.</p>
@@ -481,13 +493,15 @@ export default function Home() {
       </section>
 
       <section className="faq-section section-block" id="duvidas" aria-labelledby="faq-title">
-        <div className="section-shell faq-grid">
+        <div className="section-shell faq-grid story-section">
+          <SectionMarker number="10" label="Decisão sem dúvidas" />
           <div className="faq-intro"><span className="section-kicker">Perguntas frequentes</span><h2 id="faq-title">Dúvidas comuns antes da avaliação</h2><p>Não encontrou sua resposta? Envie sua pergunta pelo WhatsApp e contextualize o equipamento.</p><a className="button button-secondary" href={leadUrl(whatsappMessages.question)} target="_blank" rel="noopener noreferrer" onClick={() => track("whatsapp_click", "duvidas")}>Perguntar pelo WhatsApp</a></div>
           <div className="faq-list">{faqs.map(([question, answer], index) => <details key={question} open={index === 0}><summary>{question}<span>+</span></summary><p>{answer}</p></details>)}</div>
         </div>
       </section>
 
-      <section className="section-shell section-block" id="contato" aria-labelledby="contact-title">
+      <section className="section-shell section-block story-section" id="contato" aria-labelledby="contact-title">
+        <SectionMarker number="11" label="Próximo passo" />
         <div className="contact-panel">
           <div className="contact-intro">
             <span className="section-kicker section-kicker-light">Contato direto</span>
@@ -509,7 +523,7 @@ export default function Home() {
             <label>Cidade e bairro (obrigatório)<input name="localizacao" required autoComplete="address-level2" placeholder="Ex.: São Paulo, Mooca" /></label>
             <label>Tipo de equipamento (obrigatório)<select name="equipamento" required defaultValue=""><option value="" disabled>Selecione</option><option>Bomba submersível</option><option>Bomba centrífuga</option><option>Motor elétrico</option><option>Ferramenta elétrica</option><option>Sistema de piscina</option><option>Outro equipamento</option></select></label>
             <label>Urgência (obrigatório)<select name="urgencia" required defaultValue=""><option value="" disabled>Selecione</option><option>Equipamento parado</option><option>Falha recorrente</option><option>Manutenção preventiva</option><option>Apenas orçamento</option></select></label>
-            <label className="wide-field">Descrição do problema (obrigatório)<textarea name="problema" required rows={5} placeholder="Ex.: parou de funcionar, perdeu pressão, apresenta ruído ou vazamento" /></label>
+            <label className="wide-field">Descrição do problema (obrigatório)<textarea name="problema" required rows={3} placeholder="Ex.: parou de funcionar, perdeu pressão, apresenta ruído ou vazamento" /></label>
             <div className="photo-guidance wide-field"><Icon name="check" size={19} /><span><strong>Fotos e vídeos ajudam no direcionamento.</strong> Você poderá anexá-los diretamente na conversa do WhatsApp.</span></div>
             <label className="wide-field consent-field"><input name="consentimento" type="checkbox" required /> <span>Autorizo o uso destes dados para responder à solicitação pelo WhatsApp (obrigatório).</span></label>
             <button className="button submit-button" type="submit">Continuar no WhatsApp <Icon name="arrow" size={18} /></button>
