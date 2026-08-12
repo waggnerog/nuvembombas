@@ -1,7 +1,12 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { BASE_PATH, INSTAGRAM_URL, servicePages, SITE_URL } from "./seo-data";
+import { CookieConsent } from "./cookie-consent";
+import { BASE_PATH, INSTAGRAM_URL, POSTAL_CODE, SERVICE_CITIES, servicePages, SITE_URL } from "./seo-data";
 import "./globals.css";
+
+const configuredGtmId = (process.env.NEXT_PUBLIC_GTM_ID || "").trim().toUpperCase();
+const GTM_ID = /^GTM-[A-Z0-9]+$/.test(configuredGtmId) ? configuredGtmId : "";
+const GOOGLE_SITE_VERIFICATION = (process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || "").trim();
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -22,6 +27,8 @@ export const metadata: Metadata = {
   description: "Manutenção de bombas e motores em São Paulo e Grande SP. Solicite avaliação técnica pelo WhatsApp para bombas centrífugas, submersíveis e motores elétricos.",
   applicationName: "Nuvem Bombas",
   category: "Manutenção de máquinas e equipamentos",
+  referrer: "origin-when-cross-origin",
+  verification: GOOGLE_SITE_VERIFICATION ? { google: GOOGLE_SITE_VERIFICATION } : undefined,
   alternates: { canonical: SITE_URL },
   robots: {
     index: true,
@@ -56,7 +63,6 @@ export const metadata: Metadata = {
   },
   icons: { icon: `${BASE_PATH}/favicon.svg` },
   manifest: `${BASE_PATH}/manifest.webmanifest`,
-  other: { "codex-preview": "development" },
 };
 
 const localBusinessJsonLd = {
@@ -81,15 +87,10 @@ const localBusinessJsonLd = {
     streetAddress: "Rua Ascenso Fernandes, 458",
     addressLocality: "São Paulo",
     addressRegion: "SP",
+    postalCode: POSTAL_CODE,
     addressCountry: "BR",
   },
-  areaServed: [
-    { "@type": "City", name: "São Paulo" },
-    { "@type": "AdministrativeArea", name: "Grande São Paulo" },
-    { "@type": "City", name: "Itaquaquecetuba" },
-    { "@type": "City", name: "Poá" },
-    { "@type": "City", name: "Santana de Parnaíba" },
-  ],
+  areaServed: SERVICE_CITIES.map((city) => ({ "@type": "City", name: city })),
   openingHoursSpecification: [{
     "@type": "OpeningHoursSpecification",
     dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
@@ -125,6 +126,20 @@ export default function RootLayout({
     <html lang="pt-BR">
       <head>
         <script
+          id="consent-mode-default"
+          dangerouslySetInnerHTML={{
+            __html: `window.dataLayer=window.dataLayer||[];window.gtag=function(){window.dataLayer.push(arguments)};window.gtag('consent','default',{analytics_storage:'denied',ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',wait_for_update:500});window.gtag('set','ads_data_redaction',true);window.gtag('set','url_passthrough',true);try{var consentChoice=localStorage.getItem('nuvem_cookie_choice');if(consentChoice==='aceitos'){window.gtag('consent','update',{analytics_storage:'granted',ad_storage:'granted',ad_user_data:'granted',ad_personalization:'granted'})}}catch(error){}`,
+          }}
+        />
+        {GTM_ID && (
+          <script
+            id="google-tag-manager"
+            dangerouslySetInnerHTML={{
+              __html: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f)})(window,document,'script','dataLayer','${GTM_ID}');`,
+            }}
+          />
+        )}
+        <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessJsonLd).replace(/</g, "\\u003c") }}
         />
@@ -132,7 +147,19 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        {GTM_ID && (
+          <noscript>
+            <iframe
+              src={`https://www.googletagmanager.com/ns.html?id=${GTM_ID}`}
+              height="0"
+              width="0"
+              title="Google Tag Manager"
+              style={{ display: "none", visibility: "hidden" }}
+            />
+          </noscript>
+        )}
         {children}
+        <CookieConsent />
       </body>
     </html>
   );
