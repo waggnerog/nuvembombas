@@ -1,42 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { withBasePath } from "./seo-data";
+import { useEffect, useRef, useState } from "react";
+import { captureAttribution, emptyAttribution, leadWhatsappUrl, trackEvent } from "./analytics";
+import type { CampaignAttribution } from "./analytics";
+import { INSTAGRAM_URL, POSTAL_CODE, withBasePath } from "./seo-data";
 
-const WHATSAPP_NUMBER = "5511960880719";
 const WHATSAPP_DISPLAY = "(11) 96088-0719";
-const INSTAGRAM_URL = "https://www.instagram.com/nuvempiscinas/";
-const MAP_URL = "https://www.google.com/maps/search/?api=1&query=Rua+Ascenso+Fernandes+458+S%C3%A3o+Miguel+Paulista+S%C3%A3o+Paulo+SP";
-
-function whatsappUrl(message: string) {
-  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
-}
+const MAP_URL = "https://www.google.com/maps/search/?api=1&query=Rua+Ascenso+Fernandes+458+Jardim+Helena+S%C3%A3o+Paulo+SP+08081-040";
 
 const whatsappMessages = {
   quote: "Olá! Vim pelo site da Nuvem Bombas e gostaria de solicitar uma avaliação técnica. Meu equipamento é:",
   urgent: "Olá! Vim pelo site da Nuvem Bombas. Meu equipamento parou e preciso de orientação técnica. O problema apresentado é:",
   schedule: "Olá! Vim pelo site da Nuvem Bombas e gostaria de agendar uma avaliação. Minha cidade/bairro e melhor período são:",
   question: "Olá! Vim pelo site da Nuvem Bombas e tenho uma dúvida sobre manutenção de bombas, motores ou equipamentos:",
-};
-
-type CampaignAttribution = {
-  source: string;
-  medium: string;
-  campaign: string;
-  term: string;
-  content: string;
-  gclid: string;
-  landingPage: string;
-};
-
-const emptyAttribution: CampaignAttribution = {
-  source: "",
-  medium: "",
-  campaign: "",
-  term: "",
-  content: "",
-  gclid: "",
-  landingPage: "",
 };
 
 const leadIntents = [
@@ -153,82 +129,39 @@ function SectionMarker({ number, label }: { number: string; label: string }) {
 export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [formSent, setFormSent] = useState(false);
-  const [cookiesVisible, setCookiesVisible] = useState(false);
   const [privacyOpen, setPrivacyOpen] = useState(false);
   const [attribution, setAttribution] = useState<CampaignAttribution>(emptyAttribution);
+  const formStarted = useRef(false);
 
   useEffect(() => {
-    const clean = (value: string | null) => (value || "").trim().slice(0, 120);
-    const params = new URLSearchParams(window.location.search);
-    let stored: Partial<CampaignAttribution> = {};
+    const current = captureAttribution();
+    let consentChoice = "pending";
     try {
-      stored = JSON.parse(sessionStorage.getItem("nuvem_campaign_attribution") || "{}");
+      consentChoice = localStorage.getItem("nuvem_cookie_choice") || "pending";
     } catch {
-      stored = {};
-    }
-
-    const current: CampaignAttribution = {
-      source: clean(params.get("utm_source")) || clean(stored.source || "") || (params.get("gclid") ? "google" : ""),
-      medium: clean(params.get("utm_medium")) || clean(stored.medium || "") || (params.get("gclid") ? "cpc" : ""),
-      campaign: clean(params.get("utm_campaign")) || clean(stored.campaign || ""),
-      term: clean(params.get("utm_term")) || clean(stored.term || ""),
-      content: clean(params.get("utm_content")) || clean(stored.content || ""),
-      gclid: clean(params.get("gclid")) || clean(stored.gclid || ""),
-      landingPage: `${window.location.pathname}${window.location.search}`.slice(0, 300),
-    };
-
-    try {
-      sessionStorage.setItem("nuvem_campaign_attribution", JSON.stringify(current));
-    } catch {
-      // A navegação continua normalmente quando o armazenamento está indisponível.
+      consentChoice = "pending";
     }
 
     const attributionTimer = window.setTimeout(() => setAttribution(current), 0);
-    const win = window as typeof window & { dataLayer?: Record<string, string | boolean>[] };
-    win.dataLayer = win.dataLayer || [];
-    win.dataLayer.push({
-      event: "landing_page_view",
+    trackEvent("landing_page_view", current, {
       page_type: "paid_traffic_landing",
-      traffic_source: current.source || "direct",
-      traffic_medium: current.medium || "none",
-      campaign_name: current.campaign || "not_set",
-      campaign_term: current.term || "not_set",
-      campaign_content: current.content || "not_set",
-      landing_page: current.landingPage,
-      has_gclid: Boolean(current.gclid),
-      consent_choice: localStorage.getItem("nuvem_cookie_choice") || "pending",
+      consent_choice: consentChoice,
     });
 
-    const cookieTimer = window.setTimeout(() => setCookiesVisible(!localStorage.getItem("nuvem_cookie_choice")), 0);
     return () => {
       window.clearTimeout(attributionTimer);
-      window.clearTimeout(cookieTimer);
     };
   }, []);
 
-  function track(event: string, detail?: string) {
-    const win = window as typeof window & { dataLayer?: Record<string, string | boolean>[] };
-    win.dataLayer = win.dataLayer || [];
-    win.dataLayer.push({
-      event,
-      ...(detail ? { event_label: detail } : {}),
+  function track(event: string, position?: string, data: Record<string, unknown> = {}) {
+    trackEvent(event, attribution, {
+      ...(position ? { button_position: position } : {}),
       page_type: "paid_traffic_landing",
-      traffic_source: attribution.source || "direct",
-      traffic_medium: attribution.medium || "none",
-      campaign_name: attribution.campaign || "not_set",
-      campaign_term: attribution.term || "not_set",
-      campaign_content: attribution.content || "not_set",
-      landing_page: attribution.landingPage || window.location.pathname,
-      has_gclid: Boolean(attribution.gclid),
+      ...data,
     });
   }
 
-  const campaignNote = [
-    attribution.source ? `Origem: ${attribution.source}` : "",
-    attribution.campaign ? `Campanha: ${attribution.campaign}` : "",
-  ].filter(Boolean).join(" | ");
-
-  const leadUrl = (message: string) => whatsappUrl(`${message}${campaignNote ? `\n\n${campaignNote}` : ""}`);
+  const leadUrl = (message: string) => leadWhatsappUrl(message, attribution);
 
   const closeMenu = () => setMenuOpen(false);
 
@@ -249,26 +182,13 @@ export default function Home() {
       ...fields.map(([label, value]) => `${label}: ${value || "Não informado"}`),
       "",
       "Posso enviar fotos ou vídeos do equipamento por aqui.",
-      ...(campaignNote ? ["", campaignNote] : []),
     ].join("\n");
     track("generate_lead", "formulario_whatsapp");
     setFormSent(true);
-    const target = whatsappUrl(message);
+    const target = leadWhatsappUrl(message, attribution);
     const opened = window.open(target, "_blank");
     if (opened) opened.opener = null;
     else window.location.href = target;
-  }
-
-  function saveCookieChoice(choice: string) {
-    localStorage.setItem("nuvem_cookie_choice", choice);
-    const win = window as typeof window & { dataLayer?: Record<string, string | boolean>[] };
-    win.dataLayer = win.dataLayer || [];
-    win.dataLayer.push({
-      event: "consent_update",
-      analytics_storage: choice === "aceitos" ? "granted" : "denied",
-      ad_storage: choice === "aceitos" ? "granted" : "denied",
-    });
-    setCookiesVisible(false);
   }
 
   return (
@@ -283,7 +203,7 @@ export default function Home() {
             <a href="#atendimento" onClick={closeMenu}>Atendimento</a>
             <a href="#duvidas" onClick={closeMenu}>Dúvidas</a>
           </nav>
-          <a className="button button-sm nav-cta" href={leadUrl(whatsappMessages.quote)} target="_blank" rel="noopener noreferrer" onClick={() => track("whatsapp_click", "cabecalho")}>Falar no WhatsApp <Icon name="arrow" size={17} /></a>
+          <a className="button button-sm nav-cta" href={leadUrl(whatsappMessages.quote)} target="_blank" rel="noopener noreferrer" onClick={() => track("click_whatsapp", "cabecalho")}>Falar no WhatsApp <Icon name="arrow" size={17} /></a>
           <button className="menu-toggle" type="button" aria-label={menuOpen ? "Fechar menu" : "Abrir menu"} aria-expanded={menuOpen} onClick={() => setMenuOpen(!menuOpen)}>
             <Icon name={menuOpen ? "close" : "menu"} />
           </button>
@@ -297,8 +217,8 @@ export default function Home() {
             <h1 id="hero-title">Bomba ou motor <em>com falha?</em></h1>
             <p className="hero-lead"><strong>Solicite uma avaliação técnica pelo WhatsApp.</strong> Descreva os sintomas, envie fotos e receba a orientação inicial para avaliação, retirada ou entrega na oficina.</p>
             <div className="hero-actions">
-              <a className="button" href={leadUrl(whatsappMessages.quote)} target="_blank" rel="noopener noreferrer" onClick={() => track("whatsapp_click", "hero_avaliacao")}>Solicitar avaliação no WhatsApp <Icon name="arrow" size={18} /></a>
-              <a className="button button-secondary" href={leadUrl(whatsappMessages.urgent)} target="_blank" rel="noopener noreferrer" onClick={() => track("whatsapp_click", "hero_equipamento_parado")}>Meu equipamento parou</a>
+              <a className="button" href={leadUrl(whatsappMessages.quote)} target="_blank" rel="noopener noreferrer" onClick={() => track("click_whatsapp", "hero_avaliacao")}>Solicitar avaliação no WhatsApp <Icon name="arrow" size={18} /></a>
+              <a className="button button-secondary" href={leadUrl(whatsappMessages.urgent)} target="_blank" rel="noopener noreferrer" onClick={() => track("click_whatsapp", "hero_equipamento_parado")}>Meu equipamento parou</a>
             </div>
             <p className="hero-note"><Icon name="check" size={17} /> Você revisa a mensagem antes de enviar • atendimento de segunda a sábado</p>
           </div>
@@ -324,7 +244,7 @@ export default function Home() {
         </div>
         <div className="intent-grid">
           {leadIntents.map((intent) => (
-            <a key={intent.event} href={leadUrl(intent.message)} target="_blank" rel="noopener noreferrer" onClick={() => track("whatsapp_click", `intent_${intent.event}`)}>
+            <a key={intent.event} href={leadUrl(intent.message)} target="_blank" rel="noopener noreferrer" onClick={() => track("click_whatsapp", `intent_${intent.event}`)}>
               <span className="intent-icon"><Icon name={intent.icon} size={23} /></span>
               <span><strong>{intent.title}</strong><small>{intent.text}</small></span>
               <Icon name="arrow" size={19} />
@@ -351,8 +271,8 @@ export default function Home() {
               <h3>{service.title}</h3>
               <p>{service.text}</p>
               <div className="service-card-actions">
-                <a className="service-detail-link" href={withBasePath(`/servicos/${service.slug}`)}>Ver detalhes e aplicações <Icon name="arrow" size={17} /></a>
-                <a className="service-whatsapp-link" href={leadUrl(`Olá! Vim pelo site da Nuvem Bombas e gostaria de solicitar uma avaliação para: ${service.title}. Meu equipamento e o problema são:`)} target="_blank" rel="noopener noreferrer" onClick={() => track("whatsapp_click", `servico_${service.slug}`)}>Pedir avaliação pelo WhatsApp</a>
+                <a className="service-detail-link" href={withBasePath(`/servicos/${service.slug}`)} onClick={() => track("view_service", `card_${service.slug}`, { service_slug: service.slug, service_name: service.title })}>Ver detalhes e aplicações <Icon name="arrow" size={17} /></a>
+                <a className="service-whatsapp-link" href={leadUrl(`Olá! Vim pelo site da Nuvem Bombas e gostaria de solicitar uma avaliação para: ${service.title}. Meu equipamento e o problema são:`)} target="_blank" rel="noopener noreferrer" onClick={() => track("click_whatsapp", `servico_${service.slug}`, { service_slug: service.slug, service_name: service.title })}>Pedir avaliação pelo WhatsApp</a>
               </div>
             </article>
           ))}
@@ -367,7 +287,7 @@ export default function Home() {
           <span className="section-kicker section-kicker-light">Resposta técnica</span>
           <h2 id="emergency-title">Seu equipamento parou? Obtenha orientação antes que a falha comprometa a operação.</h2>
           <p>Informe os sintomas e envie fotos pelo WhatsApp. A equipe orientará o próximo passo para avaliação, retirada ou recebimento na oficina.</p>
-          <a className="button button-white" href={leadUrl(whatsappMessages.urgent)} target="_blank" rel="noopener noreferrer" onClick={() => track("whatsapp_click", "urgencia")}>Solicitar orientação pelo WhatsApp <Icon name="arrow" size={18} /></a>
+          <a className="button button-white" href={leadUrl(whatsappMessages.urgent)} target="_blank" rel="noopener noreferrer" onClick={() => track("click_whatsapp", "urgencia")}>Solicitar orientação pelo WhatsApp <Icon name="arrow" size={18} /></a>
         </div>
       </section>
 
@@ -416,7 +336,7 @@ export default function Home() {
           <p>A Nuvem Bombas atua na manutenção, recuperação e rebobinagem de bombas, motores e equipamentos. A empresa atende desde demandas residenciais e de condomínios até necessidades de obras, engenheiros e indústrias.</p>
           <p>Com conhecimento em eletrotécnica, automação, sistemas hidrodinâmicos e aplicações para piscinas, busca oferecer diagnósticos claros e soluções adequadas para cada equipamento.</p>
           <p>Mais do que realizar um reparo, o objetivo é recuperar o funcionamento, aumentar a vida útil do equipamento e proporcionar segurança ao cliente.</p>
-          <a className="text-link" href={leadUrl(whatsappMessages.question)} target="_blank" rel="noopener noreferrer" onClick={() => track("whatsapp_click", "sobre")}>Converse sobre seu equipamento <Icon name="arrow" size={18} /></a>
+          <a className="text-link" href={leadUrl(whatsappMessages.question)} target="_blank" rel="noopener noreferrer" onClick={() => track("click_whatsapp", "sobre")}>Converse sobre seu equipamento <Icon name="arrow" size={18} /></a>
         </div>
       </section>
 
@@ -451,7 +371,7 @@ export default function Home() {
             <h2 id="service-region-title">Atendimento em São Paulo e Grande São Paulo</h2>
             <p>A Nuvem Bombas atende clientes em São Paulo, Grande São Paulo e regiões como Santana de Parnaíba, Itaquaquecetuba e Poá. Consulte a disponibilidade para sua localização.</p>
             <div className="region-info">
-              <div><small>Oficina</small><strong>Rua Ascenso Fernandes, 458</strong><span>São Miguel Paulista, São Paulo — SP</span></div>
+              <div><small>Oficina</small><strong>Rua Ascenso Fernandes, 458</strong><span>Jardim Helena, São Paulo — SP · CEP {POSTAL_CODE}</span></div>
               <div><small>Horário</small><strong>Segunda a sábado</strong><span>das 7h às 17h30</span></div>
             </div>
             <p className="cost-note">Retirada, entrega e deslocamento podem ter custo adicional conforme a região.</p>
@@ -460,7 +380,7 @@ export default function Home() {
             <span className="service-icon large-icon"><Icon name="shop" size={27} /></span>
             <h3>Modalidades de atendimento</h3>
             <ul>{modalities.map((item) => <li key={item}><Icon name="check" size={17} /> {item}</li>)}</ul>
-            <a className="button" href={leadUrl(whatsappMessages.schedule)} target="_blank" rel="noopener noreferrer" onClick={() => track("whatsapp_click", "agendamento")}>Agendar uma avaliação <Icon name="calendar" size={18} /></a>
+            <a className="button" href={leadUrl(whatsappMessages.schedule)} target="_blank" rel="noopener noreferrer" onClick={() => track("click_whatsapp", "agendamento")}>Agendar uma avaliação <Icon name="calendar" size={18} /></a>
           </div>
         </div>
         <div className="audience-strip" aria-label="Públicos atendidos">
@@ -495,7 +415,7 @@ export default function Home() {
       <section className="faq-section section-block" id="duvidas" aria-labelledby="faq-title">
         <div className="section-shell faq-grid story-section">
           <SectionMarker number="10" label="Decisão sem dúvidas" />
-          <div className="faq-intro"><span className="section-kicker">Perguntas frequentes</span><h2 id="faq-title">Dúvidas comuns antes da avaliação</h2><p>Não encontrou sua resposta? Envie sua pergunta pelo WhatsApp e contextualize o equipamento.</p><a className="button button-secondary" href={leadUrl(whatsappMessages.question)} target="_blank" rel="noopener noreferrer" onClick={() => track("whatsapp_click", "duvidas")}>Perguntar pelo WhatsApp</a></div>
+          <div className="faq-intro"><span className="section-kicker">Perguntas frequentes</span><h2 id="faq-title">Dúvidas comuns antes da avaliação</h2><p>Não encontrou sua resposta? Envie sua pergunta pelo WhatsApp e contextualize o equipamento.</p><a className="button button-secondary" href={leadUrl(whatsappMessages.question)} target="_blank" rel="noopener noreferrer" onClick={() => track("click_whatsapp", "duvidas")}>Perguntar pelo WhatsApp</a></div>
           <div className="faq-list">{faqs.map(([question, answer], index) => <details key={question} open={index === 0}><summary>{question}<span>+</span></summary><p>{answer}</p></details>)}</div>
         </div>
       </section>
@@ -508,15 +428,15 @@ export default function Home() {
             <h2 id="contact-title">Organize seu pedido e continue no WhatsApp</h2>
             <p>Informe apenas o necessário para o primeiro atendimento. O WhatsApp abrirá com a mensagem pronta para você revisar e encaminhar.</p>
             <div className="contact-intents" aria-label="Atalhos de contato pelo WhatsApp">
-              <a href={leadUrl(whatsappMessages.quote)} target="_blank" rel="noopener noreferrer" onClick={() => track("whatsapp_click", "atalho_orcamento")}><Icon name="chat" size={20} /><span><strong>Pedir orçamento</strong><small>Descreva o equipamento</small></span></a>
-              <a href={leadUrl(whatsappMessages.schedule)} target="_blank" rel="noopener noreferrer" onClick={() => track("whatsapp_click", "atalho_agendamento")}><Icon name="calendar" size={20} /><span><strong>Agendar avaliação</strong><small>Informe local e período</small></span></a>
-              <a href={leadUrl(whatsappMessages.urgent)} target="_blank" rel="noopener noreferrer" onClick={() => track("whatsapp_click", "atalho_urgencia")}><Icon name="tool" size={20} /><span><strong>Equipamento parado</strong><small>Peça orientação técnica</small></span></a>
+              <a href={leadUrl(whatsappMessages.quote)} target="_blank" rel="noopener noreferrer" onClick={() => track("click_whatsapp", "atalho_orcamento")}><Icon name="chat" size={20} /><span><strong>Pedir orçamento</strong><small>Descreva o equipamento</small></span></a>
+              <a href={leadUrl(whatsappMessages.schedule)} target="_blank" rel="noopener noreferrer" onClick={() => track("click_whatsapp", "atalho_agendamento")}><Icon name="calendar" size={20} /><span><strong>Agendar avaliação</strong><small>Informe local e período</small></span></a>
+              <a href={leadUrl(whatsappMessages.urgent)} target="_blank" rel="noopener noreferrer" onClick={() => track("click_whatsapp", "atalho_urgencia")}><Icon name="tool" size={20} /><span><strong>Equipamento parado</strong><small>Peça orientação técnica</small></span></a>
             </div>
-            <div className="contact-direct"><small>WhatsApp</small><a href={leadUrl(whatsappMessages.quote)} target="_blank" rel="noopener noreferrer" onClick={() => track("whatsapp_click", "numero_contato")}>+55 {WHATSAPP_DISPLAY}</a></div>
-            <div className="contact-direct"><small>Oficina</small><a href={MAP_URL} target="_blank" rel="noopener noreferrer">Rua Ascenso Fernandes, 458<br />São Miguel Paulista, São Paulo — SP</a></div>
+            <div className="contact-direct"><small>WhatsApp</small><a href={leadUrl(whatsappMessages.quote)} target="_blank" rel="noopener noreferrer" onClick={() => track("click_whatsapp", "numero_contato")}>+55 {WHATSAPP_DISPLAY}</a></div>
+            <div className="contact-direct"><small>Oficina</small><a href={MAP_URL} target="_blank" rel="noopener noreferrer" onClick={() => track("open_map", "contato")}>Rua Ascenso Fernandes, 458<br />Jardim Helena, São Paulo — SP<br />CEP {POSTAL_CODE}</a></div>
             <p className="contact-security"><Icon name="check" size={17} /> Você controla o envio: revise a mensagem antes de confirmar no WhatsApp.</p>
           </div>
-          <form className="contact-form" onSubmit={handleSubmit}>
+          <form className="contact-form" onSubmit={handleSubmit} onFocusCapture={() => { if (!formStarted.current) { formStarted.current = true; track("form_start", "formulario_contato"); } }}>
             <input className="honeypot" name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" />
             <div className="form-intro wide-field"><span>1</span><div><strong>Conte o essencial</strong><p>Cinco campos ajudam a preparar a mensagem e reduzir perguntas repetidas.</p></div></div>
             <label>Nome (obrigatório)<input name="nome" required autoComplete="name" placeholder="Como podemos chamar você?" /></label>
@@ -535,24 +455,22 @@ export default function Home() {
 
       <section className="section-shell final-cta" aria-labelledby="final-cta-title">
         <div><span className="section-kicker">Próximo passo</span><h2 id="final-cta-title">Descreva o problema e solicite uma avaliação técnica</h2><p>Fale diretamente com a Nuvem Bombas para alinhar avaliação, retirada ou entrega na oficina.</p></div>
-        <div className="final-actions"><a className="button" href={leadUrl(whatsappMessages.quote)} target="_blank" rel="noopener noreferrer" onClick={() => track("whatsapp_click", "final")}>Solicitar avaliação <Icon name="chat" size={18} /></a><a className="button button-secondary" href={MAP_URL} target="_blank" rel="noopener noreferrer" onClick={() => track("open_map", "final")}>Ver localização</a></div>
+        <div className="final-actions"><a className="button" href={leadUrl(whatsappMessages.quote)} target="_blank" rel="noopener noreferrer" onClick={() => track("click_whatsapp", "final")}>Solicitar avaliação <Icon name="chat" size={18} /></a><a className="button button-secondary" href={MAP_URL} target="_blank" rel="noopener noreferrer" onClick={() => track("open_map", "final")}>Ver localização</a></div>
       </section>
 
       <footer className="site-footer">
         <div className="section-shell footer-grid">
           <div className="footer-brand"><Brand light /><p>Manutenção, recuperação e suporte técnico para bombas, motores e equipamentos desde 1996.</p></div>
           <div><h3>Navegação</h3><a href="#inicio">Início</a><a href="#servicos">Serviços</a><a href="#sobre">Sobre</a><a href="#duvidas">Dúvidas</a><a href="#contato">Contato</a></div>
-          <div><h3>Atendimento</h3><a href={MAP_URL} target="_blank" rel="noopener noreferrer">Rua Ascenso Fernandes, 458<br />São Miguel Paulista, São Paulo — SP</a><p>Segunda a sábado<br />7h às 17h30</p></div>
-          <div><h3>Contatos</h3><a href={leadUrl(whatsappMessages.quote)} target="_blank" rel="noopener noreferrer" onClick={() => track("whatsapp_click", "rodape")}>WhatsApp: +55 {WHATSAPP_DISPLAY}</a><a href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer">Instagram: @nuvempiscinas</a><button type="button" onClick={() => setPrivacyOpen(true)}>Política de privacidade</button></div>
+          <div><h3>Atendimento</h3><a href={MAP_URL} target="_blank" rel="noopener noreferrer" onClick={() => track("open_map", "rodape")}>Rua Ascenso Fernandes, 458<br />Jardim Helena, São Paulo — SP<br />CEP {POSTAL_CODE}</a><p>Segunda a sábado<br />7h às 17h30</p></div>
+          <div><h3>Contatos</h3><a href={leadUrl(whatsappMessages.quote)} target="_blank" rel="noopener noreferrer" onClick={() => track("click_whatsapp", "rodape")}>WhatsApp: +55 {WHATSAPP_DISPLAY}</a><a href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer">Instagram: @nuvembombas</a><button type="button" onClick={() => setPrivacyOpen(true)}>Política de privacidade</button></div>
         </div>
         <div className="section-shell footer-bottom"><span>© 2026 Nuvem Bombas. Todos os direitos reservados.</span><span>Manutenção de Máquinas e Equipamentos</span></div>
       </footer>
 
-      <a className="floating-whatsapp" href={leadUrl(whatsappMessages.quote)} target="_blank" rel="noopener noreferrer" aria-label="Solicitar avaliação pelo WhatsApp" onClick={() => track("whatsapp_click", "flutuante")}><Icon name="chat" size={22} /><span>Solicitar avaliação</span></a>
+      <a className="floating-whatsapp" href={leadUrl(whatsappMessages.quote)} target="_blank" rel="noopener noreferrer" aria-label="Solicitar avaliação pelo WhatsApp" onClick={() => track("click_whatsapp", "flutuante")}><Icon name="chat" size={22} /><span>Solicitar avaliação</span></a>
 
-      {cookiesVisible && <aside className="cookie-banner" aria-label="Preferências de cookies"><div><strong>Privacidade e cookies</strong><p>Utilizamos cookies essenciais e, após configuração, dados de medição para melhorar o atendimento e as campanhas.</p></div><div className="cookie-actions"><button type="button" onClick={() => saveCookieChoice("essenciais")}>Somente essenciais</button><button className="button button-sm" type="button" onClick={() => saveCookieChoice("aceitos")}>Aceitar</button></div></aside>}
-
-      {privacyOpen && <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="privacy-title"><div className="privacy-modal"><button className="modal-close" type="button" onClick={() => setPrivacyOpen(false)} aria-label="Fechar política de privacidade"><Icon name="close" /></button><span className="section-kicker">Privacidade</span><h2 id="privacy-title">Política de privacidade</h2><p>Os dados preenchidos são usados exclusivamente para preparar a mensagem de atendimento. O envio somente ocorre quando você confirma a mensagem no WhatsApp.</p><p>Quando as ferramentas de medição forem configuradas, poderão ser registrados eventos como cliques em contato, envio de orçamento e abertura do mapa, de forma compatível com as escolhas de cookies.</p><p>Para solicitar correção ou exclusão de dados, fale com a Nuvem Bombas pelo <a href={leadUrl("Olá! Gostaria de solicitar correção ou exclusão dos meus dados de atendimento.")} target="_blank" rel="noopener noreferrer">WhatsApp {WHATSAPP_DISPLAY}</a>.</p><button className="button" type="button" onClick={() => setPrivacyOpen(false)}>Entendi</button></div></div>}
+      {privacyOpen && <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="privacy-title"><div className="privacy-modal"><button className="modal-close" type="button" onClick={() => setPrivacyOpen(false)} aria-label="Fechar política de privacidade"><Icon name="close" /></button><span className="section-kicker">Privacidade</span><h2 id="privacy-title">Política de privacidade</h2><p>Os dados preenchidos são usados exclusivamente para preparar a mensagem de atendimento. O envio somente ocorre quando você confirma a mensagem no WhatsApp.</p><p>Com sua autorização, poderão ser registrados eventos como visualizações, cliques em contato, início do formulário e abertura do mapa para medir o desempenho do site e das campanhas.</p><p>Para solicitar correção ou exclusão de dados, fale com a Nuvem Bombas pelo <a href={leadUrl("Olá! Gostaria de solicitar correção ou exclusão dos meus dados de atendimento.")} target="_blank" rel="noopener noreferrer">WhatsApp {WHATSAPP_DISPLAY}</a>.</p><button className="button" type="button" onClick={() => setPrivacyOpen(false)}>Entendi</button></div></div>}
     </main>
   );
 }

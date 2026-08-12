@@ -1,8 +1,33 @@
 export const BASE_PATH = (process.env.NEXT_PUBLIC_BASE_PATH || "").replace(/\/$/, "");
-export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://nuvem-bombas.luiswagnercosta.chatgpt.site").replace(/\/$/, "");
+export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://nuvembombas.com.br").replace(/\/$/, "");
 export const WHATSAPP_NUMBER = "5511960880719";
 export const PHONE_DISPLAY = "+55 (11) 96088-0719";
-export const INSTAGRAM_URL = "https://www.instagram.com/nuvempiscinas/";
+export const INSTAGRAM_URL = "https://www.instagram.com/nuvembombas/";
+export const POSTAL_CODE = "08081-040";
+export const SITE_LAST_MODIFIED = "2026-08-12";
+
+export const SERVICE_CITIES = [
+  "São Paulo",
+  "Guarulhos",
+  "Itaquaquecetuba",
+  "Ferraz de Vasconcelos",
+  "Poá",
+  "Suzano",
+  "Arujá",
+  "Mogi das Cruzes",
+  "Mauá",
+  "Santo André",
+  "São Bernardo do Campo",
+  "São Caetano do Sul",
+  "Diadema",
+  "Ribeirão Pires",
+  "Santa Isabel",
+  "Rio Grande da Serra",
+  "Mairiporã",
+  "Osasco",
+  "Barueri",
+  "Santana de Parnaíba",
+] as const;
 
 export function whatsappUrl(message: string) {
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;

@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getService, PHONE_DISPLAY, servicePages, SITE_URL, whatsappUrl, withBasePath } from "../../seo-data";
+import { getService, PHONE_DISPLAY, POSTAL_CODE, SERVICE_CITIES, servicePages, SITE_URL, withBasePath } from "../../seo-data";
+import { ServiceView, TrackedWhatsAppLink } from "../../tracked-links";
 
 export const dynamicParams = false;
 
@@ -52,7 +53,7 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
       description: service.metaDescription,
       url: pageUrl,
       image: `${SITE_URL}${service.image}`,
-      areaServed: ["São Paulo", "Grande São Paulo"],
+      areaServed: SERVICE_CITIES.map((city) => ({ "@type": "City", name: city })),
       provider: { "@id": `${SITE_URL}/#business` },
       serviceType: service.shortTitle,
     },
@@ -69,6 +70,7 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
 
   return (
     <main className="service-page">
+      <ServiceView slug={service.slug} title={service.shortTitle} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
 
       <header className="service-page-header">
@@ -79,7 +81,7 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
             <Link href="/#sobre">Sobre</Link>
             <Link href="/#atendimento">Atendimento</Link>
           </nav>
-          <a className="button button-sm" href={whatsappUrl(message)} target="_blank" rel="noopener noreferrer">Pedir avaliação</a>
+          <TrackedWhatsAppLink className="button button-sm" message={message} position="service_header" service={service.slug} target="_blank" rel="noopener noreferrer">Pedir avaliação</TrackedWhatsAppLink>
         </div>
       </header>
 
@@ -91,7 +93,7 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
             <h1>{service.title}</h1>
             <p>{service.lead}</p>
             <div className="service-detail-actions">
-              <a className="button" href={whatsappUrl(message)} target="_blank" rel="noopener noreferrer">Solicitar avaliação pelo WhatsApp</a>
+              <TrackedWhatsAppLink className="button" message={message} position="service_hero" service={service.slug} target="_blank" rel="noopener noreferrer">Solicitar avaliação pelo WhatsApp</TrackedWhatsAppLink>
               <Link className="button button-secondary" href="/#servicos">Ver outros serviços</Link>
             </div>
             <ul className="service-quick-facts" aria-label="Informações de atendimento">
@@ -130,7 +132,7 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
       <section className="service-local-section">
         <div className="service-page-shell service-local-grid">
           <div><span className="section-kicker section-kicker-light">Atendimento local</span><h2>Oficina em São Miguel Paulista com atendimento em São Paulo e Grande SP</h2><p>{service.closing}</p></div>
-          <aside><small>Contato direto</small><strong>WhatsApp {PHONE_DISPLAY}</strong><p>Rua Ascenso Fernandes, 458<br />São Miguel Paulista, São Paulo — SP</p><a className="button" href={whatsappUrl(message)} target="_blank" rel="noopener noreferrer">Falar sobre este serviço</a></aside>
+          <aside><small>Contato direto</small><strong>WhatsApp {PHONE_DISPLAY}</strong><p>Rua Ascenso Fernandes, 458<br />Jardim Helena, São Paulo — SP<br />CEP {POSTAL_CODE}</p><TrackedWhatsAppLink className="button" message={message} position="service_local" service={service.slug} target="_blank" rel="noopener noreferrer">Falar sobre este serviço</TrackedWhatsAppLink></aside>
         </div>
       </section>
 

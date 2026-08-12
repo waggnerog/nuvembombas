@@ -19,6 +19,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       CUSTOM_DOMAIN: nuvembombas.com.br
+      NEXT_PUBLIC_GTM_ID: ${{ vars.NEXT_PUBLIC_GTM_ID }}
+      NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION: ${{ vars.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
