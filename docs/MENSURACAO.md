@@ -1,15 +1,15 @@
 # Mensuração do site Nuvem Bombas
 
-O site está preparado para carregar um contêiner do Google Tag Manager (GTM) e enviar eventos padronizados ao `dataLayer`. As tags só são publicadas quando a variável do GTM é configurada no GitHub.
+O site carrega o contêiner `GTM-NCCTFKH2` do Google Tag Manager (GTM) e envia eventos padronizados ao `dataLayer`. O contêiner publicado envia as visualizações e os eventos do site ao fluxo GA4 `G-RRM25TPPFE`.
 
 ## Variáveis de publicação
 
-Em **Settings → Secrets and variables → Actions → Variables**, configure:
+Os identificadores atuais estão definidos como padrão no workflow de publicação. Para substituí-los futuramente sem editar o código, configure em **Settings → Secrets and variables → Actions → Variables**:
 
 | Variável | Exemplo | Uso |
 | --- | --- | --- |
-| `NEXT_PUBLIC_GTM_ID` | `GTM-ABC1234` | Carrega o contêiner GTM no site |
-| `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` | código fornecido pelo Search Console | Adiciona a verificação do domínio ao HTML |
+| `NEXT_PUBLIC_GTM_ID` | `GTM-NCCTFKH2` | Substitui o contêiner GTM padrão |
+| `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` | código fornecido pelo Search Console | Substitui o código de verificação padrão no HTML |
 
 Depois de salvar uma variável, execute novamente o workflow **Deploy GitHub Pages** ou faça um novo push na branch `main`.
 
@@ -27,14 +27,17 @@ Depois de salvar uma variável, execute novamente o workflow **Deploy GitHub Pag
 
 Todos os eventos de aquisição incluem, quando disponíveis: `lead_id`, `traffic_source`, `traffic_medium`, `campaign_name`, `campaign_id`, `campaign_term`, `campaign_content`, `source_platform`, `landing_page` e indicadores dos IDs de clique.
 
-## Configuração recomendada no GTM
+## Configuração atual no GTM
 
-1. Adicionar a tag de configuração do Google Analytics 4 em todas as páginas.
-2. Criar eventos GA4 para cada nome listado acima usando gatilhos de **Evento personalizado**.
-3. Marcar `generate_lead` como evento principal no GA4.
-4. Criar a conversão `click_whatsapp` no Google Ads como conversão secundária e `generate_lead` como primária provisória.
-5. Adicionar o Pixel da Meta pelo GTM e disparar `Lead` em `generate_lead` somente após consentimento.
-6. Publicar o contêiner e validar com Tag Assistant, DebugView do GA4 e Meta Pixel Helper.
+1. A tag do Google `G-RRM25TPPFE` é disparada na inicialização de todas as páginas.
+2. A tag `GA4 — Eventos do site` envia os eventos listados acima por meio do acionador `Eventos Nuvem Bombas`.
+3. O contêiner publicado é a versão 2, `Mensuração GA4 — Nuvem Bombas`.
+
+Próximas integrações opcionais:
+
+1. Marcar `generate_lead` como evento principal no GA4 após o primeiro recebimento.
+2. Criar `click_whatsapp` no Google Ads como conversão secundária e `generate_lead` como primária provisória.
+3. Adicionar o Pixel da Meta pelo GTM e disparar `Lead` em `generate_lead` somente após consentimento.
 
 ## Limite da medição
 
