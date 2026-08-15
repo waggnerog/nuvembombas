@@ -133,21 +133,31 @@ export function pushDataLayer(event: string, data: Record<string, unknown> = {})
 }
 
 export function trackEvent(event: string, attribution: CampaignAttribution, data: Record<string, unknown> = {}) {
+  // Cliques muito rápidos podem ocorrer antes de o estado React receber a
+  // atribuição capturada no carregamento. Nesse caso, recuperamos os dados da
+  // sessão no próprio clique para não perder a origem do contato.
+  const resolvedAttribution = attribution.leadId ? attribution : captureAttribution();
+  const isWhatsAppContact = event === "click_whatsapp" || event === "generate_lead";
+
   pushDataLayer(event, {
     ...data,
-    lead_id: attribution.leadId || "not_set",
-    traffic_source: attribution.source || "direct",
-    traffic_medium: attribution.medium || "none",
-    campaign_name: attribution.campaign || "not_set",
-    campaign_id: attribution.campaignId || "not_set",
-    campaign_term: attribution.term || "not_set",
-    campaign_content: attribution.content || "not_set",
-    source_platform: attribution.sourcePlatform || "not_set",
-    landing_page: attribution.landingPage || window.location.pathname,
-    has_gclid: Boolean(attribution.gclid),
-    has_gbraid: Boolean(attribution.gbraid),
-    has_wbraid: Boolean(attribution.wbraid),
-    has_fbclid: Boolean(attribution.fbclid),
+    ...(isWhatsAppContact ? {
+      contact_method: "whatsapp",
+      conversion_stage: event === "generate_lead" ? "form_completed" : "contact_intent",
+    } : {}),
+    lead_id: resolvedAttribution.leadId || "not_set",
+    traffic_source: resolvedAttribution.source || "direct",
+    traffic_medium: resolvedAttribution.medium || "none",
+    campaign_name: resolvedAttribution.campaign || "not_set",
+    campaign_id: resolvedAttribution.campaignId || "not_set",
+    campaign_term: resolvedAttribution.term || "not_set",
+    campaign_content: resolvedAttribution.content || "not_set",
+    source_platform: resolvedAttribution.sourcePlatform || "not_set",
+    landing_page: resolvedAttribution.landingPage || window.location.pathname,
+    has_gclid: Boolean(resolvedAttribution.gclid),
+    has_gbraid: Boolean(resolvedAttribution.gbraid),
+    has_wbraid: Boolean(resolvedAttribution.wbraid),
+    has_fbclid: Boolean(resolvedAttribution.fbclid),
   });
 }
 

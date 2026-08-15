@@ -20,12 +20,12 @@ Depois de salvar uma variável, execute novamente o workflow **Deploy GitHub Pag
 | `landing_page_view` | Entrada na página inicial | origem, mídia, campanha e página de entrada |
 | `view_service` | Abertura ou clique em uma página de serviço | serviço e posição |
 | `form_start` | Primeira interação com o formulário | posição do formulário |
-| `generate_lead` | Formulário concluído e WhatsApp aberto | referência do lead e atribuição |
-| `click_whatsapp` | Clique em qualquer chamada para WhatsApp | posição do botão e serviço, quando aplicável |
+| `generate_lead` | Formulário concluído e WhatsApp aberto | referência do lead, atribuição e etapa `form_completed` |
+| `click_whatsapp` | Clique em qualquer chamada para WhatsApp | posição do botão, serviço e etapa `contact_intent` |
 | `open_map` | Clique para abrir a localização | posição do link |
 | `consent_update` | Escolha no banner de privacidade | estado das quatro permissões do Consent Mode v2 |
 
-Todos os eventos de aquisição incluem, quando disponíveis: `lead_id`, `traffic_source`, `traffic_medium`, `campaign_name`, `campaign_id`, `campaign_term`, `campaign_content`, `source_platform`, `landing_page` e indicadores dos IDs de clique.
+Todos os eventos de aquisição incluem, quando disponíveis: `lead_id`, `traffic_source`, `traffic_medium`, `campaign_name`, `campaign_id`, `campaign_term`, `campaign_content`, `source_platform`, `landing_page` e indicadores dos IDs de clique. Os eventos de contato também levam `contact_method=whatsapp` e a etapa correspondente. Dados preenchidos no formulário não são enviados ao Analytics ou ao Google Ads.
 
 ## Configuração atual no GTM
 
@@ -33,12 +33,18 @@ Todos os eventos de aquisição incluem, quando disponíveis: `lead_id`, `traffi
 2. A tag `GA4 — Eventos do site` envia os eventos listados acima por meio do acionador `Eventos Nuvem Bombas`.
 3. O contêiner publicado é a versão 2, `Mensuração GA4 — Nuvem Bombas`.
 
-Próximas integrações opcionais:
+## Google Ads
 
-1. Marcar `generate_lead` como evento principal no GA4 após o primeiro recebimento.
-2. Criar `click_whatsapp` no Google Ads como conversão secundária e `generate_lead` como primária provisória.
-3. Adicionar o Pixel da Meta pelo GTM e disparar `Lead` em `generate_lead` somente após consentimento.
+A conversão principal da campanha deve ser a categoria **Contato**, usando o evento `click_whatsapp` importado da propriedade GA4 vinculada. A contagem deve ser **Uma** por interação com o anúncio, pois vários cliques no WhatsApp podem pertencer ao mesmo atendimento. O evento `generate_lead` permanece como sinal diagnóstico do formulário e não deve duplicar a conversão principal.
+
+Use este sufixo de URL final na campanha para completar a atribuição sem editar cada anúncio:
+
+```text
+utm_source=google&utm_medium=cpc&utm_campaign=nb_pesquisa_servicos&utm_id={campaignid}&utm_term={keyword}&utm_content={creative}&utm_source_platform=google_ads
+```
+
+Integração opcional futura: adicionar o Pixel da Meta pelo GTM e disparar `Lead` apenas após consentimento.
 
 ## Limite da medição
 
-`click_whatsapp` mede intenção e `generate_lead` mede a abertura do WhatsApp depois do formulário. Nenhum navegador consegue confirmar sozinho que a mensagem foi realmente enviada. Cada mensagem preparada pelo site inclui uma referência `NB-AAAAMMDD-XXXXXXXX`, a origem, a campanha e, quando houver, o ID de clique. Essa referência deve ser registrada no atendimento ou CRM para associar contato, orçamento e venda à campanha.
+`click_whatsapp` mede a intenção de contato e `generate_lead` mede a abertura do WhatsApp depois do formulário. Nenhum navegador consegue confirmar sozinho que a mensagem foi realmente enviada. Cada mensagem preparada pelo site inclui uma referência `NB-AAAAMMDD-XXXXXXXX`, a origem, a campanha e, quando houver, o ID de clique. Essa referência deve ser registrada no atendimento ou CRM para associar contato, orçamento e venda à campanha.

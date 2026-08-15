@@ -23,7 +23,13 @@ export function TrackedWhatsAppLink({ message, position, service, children, ...p
     <a
       {...props}
       href={attribution.leadId ? leadWhatsappUrl(message, attribution) : whatsappUrl(message)}
-      onClick={() => trackEvent("click_whatsapp", attribution, { button_position: position, service_name: service || "not_set" })}
+      onClick={(event) => {
+        const current = attribution.leadId ? attribution : captureAttribution();
+        // Atualiza o destino antes da navegação para preservar a referência do
+        // lead mesmo em um clique imediatamente após o carregamento da página.
+        event.currentTarget.href = leadWhatsappUrl(message, current);
+        trackEvent("click_whatsapp", current, { button_position: position, service_name: service || "not_set" });
+      }}
     >
       {children}
     </a>
